@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Formulir Observasi PPL</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .document-container {
+            min-height: 500px;
+        }
+        .document-container:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        /* Style untuk mencetak */
+        @media print {
+            body {
+                background-color: #fff;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .document-container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+            }
+        }
+        /* Style tabel untuk tampilan dan cetak */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem;
+            text-align: left;
+            position: relative;
+            /* Pastikan tinggi dan lebar dapat diukur */
+            height: auto;
+            width: auto;
+        }
+        th {
+            background-color: #e5e7eb;
+            font-weight: 600;
+        }
+        .prose table td, .prose table th {
+            padding: 0.5rem;
+            vertical-align: top;
+        }
+        /* Style untuk sel yang dipilih */
+        .selected {
+            background-color: #dbeafe; /* bg-blue-100 */
+            border: 2px solid #3b82f6; /* border-blue-500 */
+            outline: none;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl no-print">
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-10">
+            <h1 class="text-3xl font-bold mb-2 text-gray-800">Editor Formulir Observasi PPL</h1>
+            <p class="text-gray-600 mb-6">
+                Formulir ini dapat Anda isi, simpan, dan cetak.
+                Data yang Anda masukkan akan otomatis tersimpan di browser Anda.
+            </p>
+
+            <!-- Message box -->
+            <div id="message-box" class="hidden p-4 mb-4 text-sm rounded-lg bg-blue-100 text-blue-800" role="alert">
+                <span id="message-text" class="font-medium"></span>
+            </div>
+
+            <!-- Table Actions Panel -->
+            <div id="table-actions" class="bg-gray-100 p-4 rounded-xl mb-6 shadow-sm no-print">
+                <p class="text-gray-700 font-semibold mb-2">Kontrol Tabel</p>
+                <p class="text-sm text-gray-500 mb-4">Pilih sel di tabel di bawah untuk mengaktifkan kontrol.</p>
+                <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+                    <!-- Row Actions -->
+                    <div class="flex items-center space-x-2 p-3 bg-white rounded-lg shadow-sm border border-gray-200 w-full sm:w-auto">
+                        <button onclick="insertRow('above')" class="p-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200" title="Tambah Baris di Atas">
+                            <!-- SVG Icon for Add Row Above -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14M5 12h14M8 12H5M19 12h-3M12 8V5M12 19v-3"/>
+                                <line x1="12" y1="2" x2="12" y2="5"></line>
+                                <line x1="5" y1="12" x2="8" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button onclick="insertRow('below')" class="p-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200" title="Tambah Baris di Bawah">
+                            <!-- SVG Icon for Add Row Below -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14M5 12h14M8 12H5M19 12h-3M12 8V5M12 19v-3"/>
+                                <line x1="12" y1="19" x2="12" y2="22"></line>
+                                <line x1="5" y1="12" x2="8" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button onclick="removeSelectedRow()" class="p-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors duration-200" title="Hapus Baris Terpilih">
+                             <!-- SVG Icon for Delete Row -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Column Actions -->
+                    <div class="flex items-center space-x-2 p-3 bg-white rounded-lg shadow-sm border border-gray-200 w-full sm:w-auto">
+                        <button onclick="insertColumn('left')" class="p-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200" title="Tambah Kolom Kiri">
+                             <!-- SVG Icon for Add Column Left -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14M5 12h14M5 8h3M5 16h3M19 8h-3M19 16h-3"/>
+                                <line x1="2" y1="12" x2="5" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button onclick="insertColumn('right')" class="p-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200" title="Tambah Kolom Kanan">
+                             <!-- SVG Icon for Add Column Right -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14M5 12h14M5 8h3M5 16h3M19 8h-3M19 16h-3"/>
+                                <line x1="19" y1="12" x2="22" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button onclick="removeSelectedColumn()" class="p-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors duration-200" title="Hapus Kolom Terpilih">
+                            <!-- SVG Icon for Delete Column -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14M5 12h14M16 16v-8M8 16v-8M12 16v-8"/>
+                                <line x1="5" y1="2" x2="5" y2="22"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Editable Area -->
+            <div id="editable-content"
+                 contenteditable="true"
+                 class="document-container p-6 border-2 border-gray-300 rounded-xl shadow-inner bg-gray-50 prose prose-lg focus:ring-4 focus:ring-blue-500 transition-all duration-300">
+                 <!-- Konten awal akan dimuat di sini -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex justify-center space-x-4 no-print">
+                <button onclick="saveDocument()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Simpan & Unduh
+                </button>
+                <button onclick="printDocument()"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                    Cetak
+                </button>
+            </div>
+
+            <!-- Instructions for other formats -->
+            <div class="mt-8 p-4 bg-gray-100 rounded-lg text-gray-700 no-print">
+                <p class="font-semibold mb-2">Cara Menyimpan dalam Format Lain:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Untuk **PDF**: Gunakan tombol "**Cetak**". Di dialog cetak, pilih "Simpan sebagai PDF" atau "Print to PDF" sebagai printer tujuan.</li>
+                    <li>Untuk **Word (DOC/DOCX)**: Gunakan tombol "**Cetak**", lalu pilih "Microsoft Print to PDF" atau "Save as PDF", lalu buka file PDF tersebut di Microsoft Word. Atau, Anda bisa menyalin semua isi editor (Ctrl+A, Ctrl+C) dan menempelkannya (Ctrl+V) langsung ke dokumen Word.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Konten untuk dicetak, tersembunyi secara default -->
+    <div id="print-container" class="hidden"></div>
+
+    <script>
+        // DOM Elements
+        const editableContent = document.getElementById('editable-content');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const printContainer = document.getElementById('print-container');
+        const localStorageKey = 'userDocumentContent_PPL';
+
+        // Global state for selected cell
+        let selectedCell = {
+            tableId: null,
+            rowIndex: null,
+            colIndex: null,
+            element: null
+        };
+
+        // Initial document content
+        const defaultContent = `
+            <h3>FORMAT OBSERVASI / SURVEY PPL</h3>
+            <p>Nama Madrasah : ___________________________</p>
+            <p>Alamat : __________________________________</p>
+            <p>Tanggal Observasi : _______________________</p>
+            <p>Nama Observer (Mahasiswa PPL) : ______________________</p>
+            
+            <br>
+            
+            <h4>1. Data Umum Madrasah</h4>
+            <table id="table-umum">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Uraian</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Nama Madrasah</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Status (Negeri/Swasta)</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Tahun Berdiri</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Kepala Madrasah</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Jumlah Tenaga Pendidik & Kependidikan</td>
+                        <td>Guru: … <br>TU: …</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>Sarana & Prasarana</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>2. Jumlah Kelas</h4>
+            <table id="table-kelas">
+                <thead>
+                    <tr>
+                        <th>Tingkat</th>
+                        <th>Jumlah Rombel</th>
+                        <th>Jumlah Siswa per Kelas</th>
+                        <th>Total Siswa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>X</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>XI</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>XII</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Total</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>3. Jumlah Siswa</h4>
+            <table id="table-siswa">
+                <thead>
+                    <tr>
+                        <th>Keterangan</th>
+                        <th>Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Laki-laki</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Perempuan</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Total</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>4. Mata Pelajaran PAI</h4>
+            <table id="table-pai">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Mata Pelajaran</th>
+                        <th>Guru Pengampu</th>
+                        <th>Jam/Minggu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Al-Qur’an Hadis</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Fiqih</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Akidah Akhlak</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>SKI</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Bahasa Arab</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>5. Kurikulum</h4>
+            <table id="table-kurikulum">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Jenis Kurikulum</th>
+                        <th>Tahun Penerapan</th>
+                        <th>Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>6. Kegiatan Non Pengajaran</h4>
+            <table id="table-nonpengajaran">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Kegiatan</th>
+                        <th>Penanggung Jawab</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td></td><td></td><td></td></tr>
+                    <tr><td>2</td><td></td><td></td><td></td></tr>
+                    <tr><td>3</td><td></td><td></td><td></td></tr>
+                    <tr><td>4</td><td></td><td></td><td></td></tr>
+                    <tr><td>5</td><td></td><td></td><td></td></tr>
+                    <tr><td>6</td><td></td><td></td><td></td></tr>
+                    <tr><td>7</td><td></td><td></td><td></td></tr>
+                    <tr><td>8</td><td></td><td></td><td></td></tr>
+                    <tr><td>9</td><td></td><td></td><td></td></tr>
+                    <tr><td>10</td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+
+            <h4>7. Kegiatan Pembudayaan / Kebiasaan Positif</h4>
+            <table id="table-positif">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Kegiatan</th>
+                        <th>Waktu Pelaksanaan</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td></td><td></td><td></td></tr>
+                    <tr><td>2</td><td></td><td></td><td></td></tr>
+                    <tr><td>3</td><td></td><td></td><td></td></tr>
+                    <tr><td>4</td><td></td><td></td><td></td></tr>
+                    <tr><td>5</td><td></td><td></td><td></td></tr>
+                    <tr><td>6</td><td></td><td></td><td></td></tr>
+                    <tr><td>7</td><td></td><td></td><td></td></tr>
+                    <tr><td>8</td><td></td><td></td><td></td></tr>
+                    <tr><td>9</td><td></td><td></td><td></td></tr>
+                    <tr><td>10</td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+        `;
+
+        /**
+         * Menampilkan pesan notifikasi ke pengguna.
+         * @param {string} message - Pesan yang akan ditampilkan.
+         * @param {string} type - Tipe pesan (misal: 'success', 'error', 'info').
+         */
+        function showMessage(message, type = 'info') {
+            messageText.textContent = message;
+            messageBox.className = 'p-4 mb-4 text-sm rounded-lg no-print';
+            messageBox.classList.remove('hidden');
+
+            switch (type) {
+                case 'success':
+                    messageBox.classList.add('bg-green-100', 'text-green-800');
+                    break;
+                case 'error':
+                    messageBox.classList.add('bg-red-100', 'text-red-800');
+                    break;
+                case 'info':
+                default:
+                    messageBox.classList.add('bg-blue-100', 'text-blue-800');
+                    break;
+            }
+
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        /**
+         * Mengatur ulang nomor urut di kolom pertama dari tabel tertentu.
+         */
+        function reIndexTable() {
+            // Re-index semua tabel yang memiliki kolom 'No'
+            const tablesToReindex = ['table-umum', 'table-pai', 'table-kurikulum', 'table-nonpengajaran', 'table-positif'];
+            tablesToReindex.forEach(tableId => {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                const tbody = table.querySelector('tbody');
+                if (!tbody) return;
+
+                const tableRows = Array.from(tbody.rows);
+                tableRows.forEach((row, index) => {
+                    const firstCell = row.cells[0];
+                    if (firstCell) {
+                        firstCell.textContent = index + 1;
+                    }
+                });
+            });
+        }
+
+        /**
+         * Menyisipkan baris baru di atas atau di bawah baris yang dipilih, dengan tinggi yang sama.
+         * @param {string} position - 'above' atau 'below'.
+         */
+        function insertRow(position) {
+            if (!selectedCell.element) {
+                showMessage('Harap klik pada sel tabel terlebih dahulu untuk memilihnya.', 'error');
+                return;
+            }
+
+            const table = document.getElementById(selectedCell.tableId);
+            const tbody = table.querySelector('tbody');
+            const selectedRow = selectedCell.element.closest('tr');
+            const numCells = selectedRow.cells.length;
+            const newRow = document.createElement('tr');
+            
+            // Dapatkan tinggi dari baris yang dipilih
+            const selectedRowHeight = selectedRow.offsetHeight;
+
+            for (let i = 0; i < numCells; i++) {
+                const newCell = document.createElement('td');
+                newCell.textContent = '';
+                // Setel tinggi sel baru agar sama dengan baris yang dipilih
+                newCell.style.height = `${selectedRowHeight}px`;
+                newRow.appendChild(newCell);
+            }
+
+            if (position === 'above') {
+                tbody.insertBefore(newRow, selectedRow);
+            } else { // position === 'below'
+                const nextSibling = selectedRow.nextElementSibling;
+                if (nextSibling) {
+                    tbody.insertBefore(newRow, nextSibling);
+                } else {
+                    tbody.appendChild(newRow);
+                }
+            }
+            
+            reIndexTable();
+            saveToLocalStorage();
+            showMessage(`Baris baru berhasil ditambahkan ${position === 'above' ? 'di atas' : 'di bawah'} baris terpilih.`, 'success');
+        }
+
+        /**
+         * Menghapus baris yang dipilih dari tabel.
+         */
+        function removeSelectedRow() {
+            if (!selectedCell.element) {
+                showMessage('Harap klik pada sel tabel terlebih dahulu untuk memilihnya.', 'error');
+                return;
+            }
+            
+            const selectedRow = selectedCell.element.closest('tr');
+            if (!selectedRow) return;
+
+            const table = document.getElementById(selectedCell.tableId);
+            const tbody = table.querySelector('tbody');
+            if (tbody.children.length > 1) {
+                tbody.removeChild(selectedRow);
+                // Hapus kelas 'selected' dan reset state
+                if (selectedCell.element) {
+                    selectedCell.element.classList.remove('selected');
+                }
+                selectedCell = { tableId: null, rowIndex: null, colIndex: null, element: null };
+
+                reIndexTable();
+                saveToLocalStorage();
+                showMessage('Baris berhasil dihapus.', 'success');
+            } else {
+                showMessage('Tidak bisa menghapus semua baris. Minimal harus ada satu baris.', 'error');
+            }
+        }
+        
+        /**
+         * Menyisipkan kolom baru di kiri atau kanan kolom yang dipilih, dengan lebar yang sama.
+         * @param {string} position - 'left' atau 'right'.
+         */
+        function insertColumn(position) {
+            if (!selectedCell.element) {
+                showMessage('Harap klik pada sel tabel terlebih dahulu untuk memilihnya.', 'error');
+                return;
+            }
+
+            const table = document.getElementById(selectedCell.tableId);
+            const selectedColIndex = selectedCell.element.cellIndex;
+            const targetIndex = position === 'left' ? selectedColIndex : selectedColIndex + 1;
+
+            // Dapatkan lebar dari kolom yang dipilih
+            const selectedColElement = table.querySelector(`th:nth-child(${selectedColIndex + 1})`) || table.querySelector(`td:nth-child(${selectedColIndex + 1})`);
+            const selectedColWidth = selectedColElement ? selectedColElement.offsetWidth : 100; // Default width jika tidak ditemukan
+
+            // Tambah kolom ke thead
+            const theadRows = table.querySelectorAll('thead tr');
+            theadRows.forEach(row => {
+                const newHeader = document.createElement('th');
+                newHeader.textContent = 'Kolom Baru';
+                newHeader.style.width = `${selectedColWidth}px`;
+                row.insertBefore(newHeader, row.cells[targetIndex]);
+            });
+
+            // Tambah kolom ke tbody
+            const tbodyRows = table.querySelectorAll('tbody tr');
+            tbodyRows.forEach(row => {
+                const newCell = document.createElement('td');
+                newCell.textContent = '';
+                newCell.style.width = `${selectedColWidth}px`;
+                row.insertBefore(newCell, row.cells[targetIndex]);
+            });
+
+            reIndexTable();
+            saveToLocalStorage();
+            showMessage(`Kolom baru berhasil ditambahkan di ${position === 'left' ? 'kiri' : 'kanan'} kolom terpilih.`, 'success');
+        }
+
+        /**
+         * Menghapus kolom yang dipilih dari tabel.
+         */
+        function removeSelectedColumn() {
+            if (!selectedCell.element) {
+                showMessage('Harap klik pada sel tabel terlebih dahulu untuk memilihnya.', 'error');
+                return;
+            }
+
+            const table = document.getElementById(selectedCell.tableId);
+            const selectedColIndex = selectedCell.element.cellIndex;
+            
+            // Minimal harus ada satu kolom
+            const headerRow = table.querySelector('thead tr');
+            if (headerRow && headerRow.children.length <= 1) {
+                showMessage('Tidak bisa menghapus semua kolom. Minimal harus ada satu kolom.', 'error');
+                return;
+            }
+            
+            // Hapus dari thead
+            const theadRows = table.querySelectorAll('thead tr');
+            theadRows.forEach(row => {
+                if (row.cells[selectedColIndex]) {
+                    row.removeChild(row.cells[selectedColIndex]);
+                }
+            });
+
+            // Hapus dari tbody
+            const tbodyRows = table.querySelectorAll('tbody tr');
+            tbodyRows.forEach(row => {
+                if (row.cells[selectedColIndex]) {
+                    row.removeChild(row.cells[selectedColIndex]);
+                }
+            });
+
+            // Hapus kelas 'selected' dan reset state
+            if (selectedCell.element) {
+                selectedCell.element.classList.remove('selected');
+            }
+            selectedCell = { tableId: null, rowIndex: null, colIndex: null, element: null };
+
+            reIndexTable();
+            saveToLocalStorage();
+            showMessage('Kolom berhasil dihapus.', 'success');
+        }
+
+        /**
+         * Mengunduh konten yang diedit sebagai file HTML.
+         */
+        function saveDocument() {
+            try {
+                // Buat konten HTML lengkap untuk diunduh
+                const fullHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dokumen Cetak</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; }
+        h1, h2, h3, h4 { color: #1f2937; }
+        p, table, td, th { color: #374151; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1rem; }
+        th, td { border: 1px solid #d1d5db; padding: 0.75rem; text-align: left; }
+        th { background-color: #e5e7eb; font-weight: 600; }
+    </style>
+</head>
+<body>
+    ${editableContent.innerHTML}
+</body>
+</html>`;
+                
+                const blob = new Blob([fullHtml], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'formulir-observasi-ppl.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showMessage('Dokumen berhasil disimpan sebagai file HTML!', 'success');
+            } catch (error) {
+                console.error('Gagal menyimpan dokumen:', error);
+                showMessage('Gagal menyimpan dokumen. Silakan coba lagi.', 'error');
+            }
+        }
+
+        /**
+         * Mengatur dan memicu fungsi cetak browser.
+         */
+        function printDocument() {
+            // Salin konten ke container cetak
+            printContainer.innerHTML = `
+                <div style="font-family: 'Inter', sans-serif; padding: 20px;">
+                    ${editableContent.innerHTML}
+                </div>
+            `;
+            
+            // Sembunyikan konten lain, tampilkan konten cetak
+            document.body.classList.add('printing');
+            printContainer.classList.remove('hidden');
+
+            window.print();
+
+            // Sembunyikan konten cetak setelah selesai
+            printContainer.classList.add('hidden');
+            document.body.classList.remove('printing');
+        }
+
+        /**
+         * Menyimpan konten ke localStorage.
+         */
+        function saveToLocalStorage() {
+            localStorage.setItem(localStorageKey, editableContent.innerHTML);
+            // showMessage('Pekerjaan Anda otomatis tersimpan.', 'info');
+        }
+
+        /**
+         * Memuat konten dari localStorage atau default content.
+         */
+        function loadContent() {
+            const savedContent = localStorage.getItem(localStorageKey);
+            if (savedContent) {
+                editableContent.innerHTML = savedContent;
+            } else {
+                editableContent.innerHTML = defaultContent;
+            }
+        }
+
+        // Event listener untuk menyimpan otomatis setiap kali konten berubah
+        editableContent.addEventListener('input', saveToLocalStorage);
+
+        // Event listener untuk memilih sel tabel
+        editableContent.addEventListener('click', (e) => {
+            const target = e.target;
+            // Cek jika yang diklik adalah sel tabel (td atau th)
+            if (target.tagName === 'TD' || target.tagName === 'TH') {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Hapus kelas 'selected' dari sel sebelumnya
+                if (selectedCell.element) {
+                    selectedCell.element.classList.remove('selected');
+                }
+
+                // Tambahkan kelas 'selected' ke sel yang baru diklik
+                target.classList.add('selected');
+
+                // Simpan data sel yang dipilih
+                const table = target.closest('table');
+                selectedCell.tableId = table ? table.id : null;
+                selectedCell.rowIndex = target.closest('tr').rowIndex;
+                selectedCell.colIndex = target.cellIndex;
+                selectedCell.element = target;
+            }
+        });
+
+        // Memuat konten saat halaman pertama kali dimuat
+        window.onload = loadContent;
+
+    </script>
+</body>
+</html>
